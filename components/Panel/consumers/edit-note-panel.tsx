@@ -29,7 +29,7 @@ export function EditNotePanel({
   date,
   slot,
 }: EditNotePanelProps) {
-  const { deletePlanned, moveItem, updateItem } = useCalendarContext();
+  const { deletePlanned, moveItem, updateItem, planNote } = useCalendarContext();
   const [title, setTitle] = useState(initialTitle);
   const [selectedDate, setSelectedDate] = useState(parseDate(date));
   const [selectedSlot, setSelectedSlot] = useState<Slot>(slot);
@@ -66,6 +66,12 @@ export function EditNotePanel({
 
   const handleDelete = () => {
     deletePlanned(noteId);
+    onOpenChange(false);
+  };
+
+  const handleDuplicate = () => {
+    // Create a duplicate with the same title, date, and slot
+    planNote(selectedDate.toString(), selectedSlot, title.trim() || initialTitle);
     onOpenChange(false);
   };
 
@@ -107,6 +113,9 @@ export function EditNotePanel({
         <div className="mt-2 flex justify-end gap-2">
           <Button isIconOnly color="danger" size="sm" variant="light" onPress={handleDelete}>
             <TrashIcon className="h-4 w-4" />
+          </Button>
+          <Button color="default" size="sm" variant="flat" onPress={handleDuplicate}>
+            {tActions("duplicate")}
           </Button>
           <Button color="primary" onPress={handleSave}>
             {tActions("save")}
