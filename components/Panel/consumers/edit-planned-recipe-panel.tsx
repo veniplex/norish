@@ -68,7 +68,7 @@ export function EditPlannedRecipePanel({
   };
 
   const handleDuplicate = () => {
-    // Create a duplicate with the same date and slot
+    // Create a duplicate with the currently selected date and slot
     planMeal(selectedDate.toString(), selectedSlot, recipeId);
     onOpenChange(false);
   };

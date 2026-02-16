@@ -71,7 +71,7 @@ export function EditNotePanel({
 
   const handleDuplicate = () => {
     if (!title.trim()) return;
-    // Create a duplicate with the same title, date, and slot
+    // Create a duplicate with the current title and selected date/slot
     planNote(selectedDate.toString(), selectedSlot, title.trim());
     onOpenChange(false);
   };
