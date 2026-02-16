@@ -35,7 +35,7 @@ export function EditPlannedRecipePanel({
   date,
   slot,
 }: EditPlannedRecipePanelProps) {
-  const { deletePlanned, moveItem } = useCalendarContext();
+  const { deletePlanned, moveItem, planMeal } = useCalendarContext();
   const [selectedDate, setSelectedDate] = useState(parseDate(date));
   const [selectedSlot, setSelectedSlot] = useState<Slot>(slot);
 
@@ -64,6 +64,12 @@ export function EditPlannedRecipePanel({
 
   const handleDelete = () => {
     deletePlanned(itemId);
+    onOpenChange(false);
+  };
+
+  const handleDuplicate = () => {
+    // Create a duplicate with the currently selected date and slot
+    planMeal(selectedDate.toString(), selectedSlot, recipeId);
     onOpenChange(false);
   };
 
@@ -115,6 +121,15 @@ export function EditPlannedRecipePanel({
             onPress={handleDelete}
           >
             {tActions("delete")}
+          </Button>
+          <Button
+            className="min-w-16"
+            color="default"
+            size="sm"
+            variant="flat"
+            onPress={handleDuplicate}
+          >
+            {tActions("duplicate")}
           </Button>
           <Button className="min-w-16" color="primary" size="sm" onPress={handleSave}>
             {tActions("save")}
