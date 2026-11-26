@@ -22,6 +22,7 @@ import { connectTimerStorage } from "@norish/shared-react/recipes/timers";
 import { signOut } from "@norish/shared/lib/auth/client";
 import { addBasePath } from "@norish/shared/lib/base-path";
 import { deviceKindFromUserAgent } from "@norish/shared/lib/device-kind";
+import { isOpenableExternalUrl } from "@norish/shared/lib/external-url";
 
 const SIGNED_OUT: PlatformSession = { user: null, isPending: false };
 
@@ -81,18 +82,22 @@ export function WebPlatformProvider({
 
   const adapter: PlatformAdapter = {
     toast: {
-      show: ({ severity, title, description, actionLabel, onActionPress }) => {
+      show: ({ severity, title, description, actionLabel, onActionPress, persistent }) => {
+        // A timeout of 0 keeps the toast until it is dismissed or its action is pressed.
+        const timeout = persistent ? 0 : undefined;
+
         if (actionLabel) {
           showActionToast(title, {
             description,
             variant: severity,
+            timeout,
             action: { label: actionLabel, onPress: () => onActionPress?.() },
           });
 
           return;
         }
 
-        toast(title, { description, variant: severity });
+        toast(title, { description, variant: severity, timeout });
       },
       translate: (messageId, values) => t(messageId as Parameters<typeof t>[0], values),
     },
@@ -108,6 +113,12 @@ export function WebPlatformProvider({
         context,
       }),
     storage: browserStorage,
+    // The press of a toast's button is the gesture that lets a popup open; an async call is not.
+    openExternalUrl: (url) => {
+      if (isOpenableExternalUrl(url)) window.open(url, "_blank", "noopener,noreferrer");
+    },
+    opensExternalUrlUnprompted: false,
+    supportsExternalShoppingList: true,
     deviceKind: kind,
     session,
     endSession: endWebSession,

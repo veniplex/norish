@@ -636,6 +636,13 @@
       "defaultLocale": "Oletuskieli",
       "defaultLocaleDescription": "Uusien käyttäjien kieli ja varakieli",
       "atLeastOneLocale": "Vähintään yhden kielen on oltava käytössä",
+      "groceryListProvider": {
+        "title": "Ostoslista",
+        "description": "Minne reseptin ainekset menevät, kun joku lisää ne listaan.",
+        "builtin": "Norishin ostoslista",
+        "bring": "Bring!",
+        "bringNotice": "Kun joku lisää aineksia, Bring!in palvelimet hakevat tilapäisen julkisen HTTPS-sivun, jolla on reseptin nimi, annosmäärä ja tuoterivit. Tämän Norish-palvelimen on siksi oltava tavoitettavissa internetistä."
+      },
       "export": {
         "title": "Reseptiarkisto",
         "description": "Lataa kaikki tämän palvelimen reseptit.",

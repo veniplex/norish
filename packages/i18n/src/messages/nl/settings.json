@@ -636,6 +636,13 @@
       "defaultLocale": "Standaardtaal",
       "defaultLocaleDescription": "Taal voor nieuwe gebruikers en als fallback",
       "atLeastOneLocale": "Minimaal één taal moet ingeschakeld zijn",
+      "groceryListProvider": {
+        "title": "Boodschappenlijst",
+        "description": "Waar de ingrediënten van een recept naartoe gaan als iemand ze aan de lijst toevoegt.",
+        "builtin": "Norish-boodschappenlijst",
+        "bring": "Bring!",
+        "bringNotice": "Als iemand ingrediënten toevoegt, halen de servers van Bring! een tijdelijke openbare HTTPS-pagina op met de receptnaam, het aantal porties en de itemregels. Deze Norish-instantie moet dus vanaf internet bereikbaar zijn."
+      },
       "export": {
         "title": "Archief",
         "description": "Download elk recept op deze server.",
