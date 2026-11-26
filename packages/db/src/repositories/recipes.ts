@@ -167,6 +167,17 @@ export async function getRecipeOwnerIds(recipeIds: string[]): Promise<Map<string
   return new Map(rows.map((row) => [row.id, row.userId]));
 }
 
+/** A recipe's name, or null when it does not exist or has none. */
+export async function getRecipeName(recipeId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ name: recipes.name })
+    .from(recipes)
+    .where(eq(recipes.id, recipeId))
+    .limit(1);
+
+  return row?.name ?? null;
+}
+
 /**
  * Get the owner userId for a recipe (for permission checks)
  */

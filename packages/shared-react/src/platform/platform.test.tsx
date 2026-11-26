@@ -21,6 +21,19 @@ describe("the platform adapter", () => {
     expect(adapter.navigation.toRecipe).toHaveBeenCalledWith("r1");
   });
 
+  it("opens links outside the app, and says whether it may do so unprompted", () => {
+    const { result } = renderHook(() => usePlatform(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <PlatformProvider adapter={adapter}>{children}</PlatformProvider>
+      ),
+    });
+
+    result.current.openExternalUrl("https://example.com");
+
+    expect(adapter.openExternalUrl).toHaveBeenCalledWith("https://example.com");
+    expect(result.current.opensExternalUrlUnprompted).toBe(false);
+  });
+
   it("is missing without a provider", () => {
     expect(() => renderHook(() => usePlatform())).toThrow();
   });

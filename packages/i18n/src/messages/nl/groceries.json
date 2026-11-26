@@ -109,6 +109,19 @@
     "inYourPantry": "In je voorraadkast",
     "offlineDetails": "De details van een product openen weer als je online bent."
   },
+  "bring": {
+    "addTitle": "Toevoegen aan Bring!",
+    "addButton": "Toevoegen aan Bring!",
+    "ready": "Je items staan klaar voor Bring!",
+    "open": "Bring! openen",
+    "errors": {
+      "notPublic": "Bring! kan deze Norish-instantie niet bereiken. Die moet via HTTPS vanaf internet bereikbaar zijn.",
+      "unreachable": "Bring! reageerde niet. Probeer het zo opnieuw.",
+      "rejected": "Bring! kon de lijst niet lezen. Controleer of deze Norish-instantie via HTTPS vanaf internet bereikbaar is.",
+      "rateLimited": "Te veel lijsten naar Bring! gestuurd – wacht een paar minuten.",
+      "failed": "Versturen naar Bring! mislukt"
+    }
+  },
   "panel": {
     "addTitle": "Boodschap toevoegen",
     "editTitle": "Boodschap bewerken",

@@ -61,7 +61,7 @@ function useSaveAndTest<TData extends WriteResult, TError, TVariables, TTested, 
   };
 }
 
-/** Registration and the languages users choose from; the language save toasts how it went. */
+/** Registration, the languages users choose from and where recipes add to the list; the language save toasts how it went. */
 export function useGeneralConfigMutations() {
   const trpc = useTRPC();
   const reread = useReread();
@@ -92,7 +92,13 @@ export function useGeneralConfigMutations() {
     "admin-general:save-locales"
   );
 
-  return { setRegistration, saveLocales };
+  const setGroceryListProvider = useConfigWrite(
+    trpc.admin.updateGroceryListProvider.mutationOptions(),
+    "admin-general:grocery-list-provider",
+    [trpc.config.groceryListProvider.queryKey()]
+  );
+
+  return { setRegistration, saveLocales, setGroceryListProvider };
 }
 
 export function usePasswordAuthMutation() {

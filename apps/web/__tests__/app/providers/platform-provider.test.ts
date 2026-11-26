@@ -105,6 +105,75 @@ describe("the web's toast", () => {
   });
 });
 
+describe("a persistent toast", () => {
+  it("keeps an action toast open until it is dismissed or its action is pressed", () => {
+    renderPlatform().toast.show({
+      severity: "success",
+      title: "Ready",
+      actionLabel: "Open",
+      onActionPress: vi.fn(),
+      persistent: true,
+    });
+
+    expect(showActionToast).toHaveBeenLastCalledWith(
+      "Ready",
+      expect.objectContaining({ timeout: 0 })
+    );
+  });
+
+  it("keeps a plain toast open too", () => {
+    renderPlatform().toast.show({ severity: "warning", title: "Heads up", persistent: true });
+
+    expect(toast).toHaveBeenLastCalledWith("Heads up", expect.objectContaining({ timeout: 0 }));
+  });
+
+  it("leaves the timeout to the toast's own default otherwise", () => {
+    renderPlatform().toast.show({ severity: "default", title: "Done", actionLabel: "Undo" });
+
+    expect(vi.mocked(showActionToast).mock.lastCall![1].timeout).toBeUndefined();
+  });
+});
+
+describe("the web's external links", () => {
+  it("opens one in a new tab that cannot reach back to the app", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+
+    renderPlatform().openExternalUrl("https://getbring.onelink.me/abc");
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      "https://getbring.onelink.me/abc",
+      "_blank",
+      "noopener,noreferrer"
+    );
+    open.mockRestore();
+  });
+
+  it("opens http as well, and nothing that is not http or https", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    const { openExternalUrl } = renderPlatform();
+
+    openExternalUrl("http://localhost:4010/open");
+    openExternalUrl("javascript:alert(1)");
+    openExternalUrl("data:text/html,hi");
+    openExternalUrl("not a url");
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      "http://localhost:4010/open",
+      "_blank",
+      "noopener,noreferrer"
+    );
+    open.mockRestore();
+  });
+
+  it("is not opened after an async call: a browser blocks that popup", () => {
+    expect(renderPlatform().opensExternalUrlUnprompted).toBe(false);
+  });
+
+  it("follows the instance's shopping list provider setting", () => {
+    expect(renderPlatform().supportsExternalShoppingList).toBe(true);
+  });
+});
+
 describe("the web's navigation", () => {
   it("goes home to the Library and to a recipe by its page", () => {
     const { navigation } = renderPlatform();

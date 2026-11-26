@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { use } from "react";
-import { AccessibilityInfo, Platform } from "react-native";
+import { AccessibilityInfo, Linking, Platform } from "react-native";
 import { publishSignedOut } from "@/lib/auth/auth-session-sync";
 import { ServerAddressContext } from "@/lib/network/server-address";
 import { offlineEngine } from "@/lib/offline/engine";
@@ -18,6 +18,7 @@ import type {
 import { createIntlMessageTranslator } from "@norish/i18n";
 import { PlatformProvider } from "@norish/shared-react/platform";
 import { connectTimerStorage } from "@norish/shared-react/recipes/timers";
+import { isOpenableExternalUrl } from "@norish/shared/lib/external-url";
 import { createClientLogger } from "@norish/shared/lib/logger";
 
 import type { ToastSeverity } from "./app-toast";
@@ -103,6 +104,13 @@ export function MobilePlatformProvider({
       });
     },
     storage: mmkvStorage,
+    openExternalUrl: (url) => {
+      if (isOpenableExternalUrl(url)) void Linking.openURL(url);
+    },
+    // The phone hands a link to another app without a popup blocker, so the add opens Bring! itself.
+    opensExternalUrlUnprompted: true,
+    // Phase one is the web only: the phone keeps the built-in grocery list whatever the setting says.
+    supportsExternalShoppingList: false,
     deviceKind,
     session,
     endSession: (scope) => endSession(scope, intl.formatMessage({ id: "calendar.widgets.signIn" })),
