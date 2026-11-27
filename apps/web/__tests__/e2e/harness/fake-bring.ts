@@ -33,8 +33,12 @@ export interface FakeBring {
   requests: BringRequest[];
   /** The paths of the deeplink pages that were opened, in order. */
   opened: string[];
+  /** The page URLs the recipe parser was asked to read, in order. */
+  parsed: string[];
   /** Answer 403 from now on, as Bring! does when it cannot read the page. */
   refuse: () => void;
+  /** Have the recipe parser get a 404 from the instance, as when Bring!'s servers cannot reach the page. */
+  breakPages: () => void;
   /** Answer as usual again, and forget what was recorded. */
   reset: () => void;
   start: () => Promise<void>;
@@ -54,7 +58,9 @@ function readBody(request: IncomingMessage): Promise<string> {
 export function createFakeBring(): FakeBring {
   const requests: BringRequest[] = [];
   const opened: string[] = [];
+  const parsed: string[] = [];
   let refusing = false;
+  let breaking = false;
   let server: Server | null = null;
   let url = "";
 
@@ -82,6 +88,42 @@ export function createFakeBring(): FakeBring {
       return;
     }
 
+    // Bring!'s recipe parser, which the deeplink's import page calls: it fetches the page, again
+    // with no cookie, and answers 400 with the status it got, as the real one does.
+    if (request.method === "GET" && path.startsWith("/rest/bringrecipes/parser?")) {
+      const pageUrl = new URL(path, url).searchParams.get("url") ?? "";
+      // Broken pages: the same address with a token that was never handed out.
+      const page = await fetch(
+        breaking ? `${pageUrl.slice(0, pageUrl.lastIndexOf("/") + 1)}${"A".repeat(32)}` : pageUrl
+      );
+      const html = await page.text();
+
+      parsed.push(pageUrl);
+
+      if (!page.ok) {
+        response.writeHead(400, { "content-type": "application/json" });
+        response.end(
+          JSON.stringify({
+            title: "Bad Request",
+            status: 400,
+            detail: `recipe url is not reachable: method=GET, httpStatus=${page.status}, httpMessage='${page.statusText}'`,
+          })
+        );
+
+        return;
+      }
+      if (!html.includes('"@type":"Recipe"')) {
+        response.writeHead(400, { "content-type": "text/plain" });
+        response.end("invalid recipe parsed: no recipe name found");
+
+        return;
+      }
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ items: [] }));
+
+      return;
+    }
+
     if (request.method === "GET" && path.startsWith("/deeplink/")) {
       opened.push(path);
       response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
@@ -99,13 +141,19 @@ export function createFakeBring(): FakeBring {
     },
     requests,
     opened,
+    parsed,
     refuse: () => {
       refusing = true;
     },
+    breakPages: () => {
+      breaking = true;
+    },
     reset: () => {
       refusing = false;
+      breaking = false;
       requests.length = 0;
       opened.length = 0;
+      parsed.length = 0;
     },
     start: () =>
       new Promise((resolve, reject) => {

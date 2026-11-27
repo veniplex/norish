@@ -20,10 +20,14 @@ without a reload. Choose **Norish grocery list** to switch back.
 
 Norish must be reachable from the internet over HTTPS. Bring! cannot take
 items directly, so Norish puts them on a temporary web page and Bring!'s
-servers fetch it. Set `AUTH_URL` to your public `https://` address. If Bring!
-cannot reach Norish, adding ingredients shows an error and nothing is sent. If
-Bring! says it could not read the list, check that the address in `AUTH_URL`
-opens from outside your network.
+servers fetch it. Set `AUTH_URL` to your public `https://` address.
+
+Before it opens Bring!, Norish has Bring! read that page once. If Bring!'s
+servers cannot fetch it, adding ingredients shows an error with the HTTP status
+your server answered them, and nothing is sent. Addresses under `/share/bring/`
+must open from the internet without a login, VPN, IP allowlist or bot
+protection in front of Norish: a reverse proxy that guards everything except
+`/share/` must leave `/share/bring/` open too.
 See [Server & runtime](/configuration/server-runtime#networking--origins).
 
 ## Add ingredients to Bring!
@@ -40,11 +44,9 @@ and unticked, as they do for the Norish grocery list. Bring! shows the items
 as a recipe named after yours. Units are written short, in your language, as
 the groceries show them: "250 g flour".
 
-On the web this takes two steps. When the items are ready, press **Open
-Bring!** on the message that appears. It stays until you close it, because a
-browser only opens a new tab when you press a button.
-
-<!-- Screenshot owed: /img/screenshots/groceries-bring-open.png (The Open Bring! message after sending). Add it as ![The Open Bring! message after sending](/img/screenshots/groceries-bring-open.png) -->
+On the web, Bring! opens in a new tab as soon as the items are ready. If your
+browser blocks that tab, a message with **Open Bring!** appears instead; it
+stays until you close it.
 
 ## What Bring! receives
 

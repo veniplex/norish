@@ -8,6 +8,7 @@ import {
   fakePlatformAdapter,
 } from "@norish/shared-react/platform/testing";
 
+import type { ExternalWindow } from "../../platform/platform";
 import { resetTRPCFake, serveTRPC, trpcCalls } from "../../trpc/testing";
 import { useSendToBring } from "../use-send-to-bring";
 
@@ -18,8 +19,12 @@ afterEach(resetTRPCFake);
 const DEEPLINK = "https://getbring.onelink.me/abc";
 const ITEMS = [{ name: "flour", amount: 200, unit: "g" }];
 
-function setup(unprompted = false) {
-  const adapter = { ...fakePlatformAdapter(), opensExternalUrlUnprompted: unprompted };
+function setup(unprompted = false, reserved: ExternalWindow | null = null) {
+  const adapter = {
+    ...fakePlatformAdapter(),
+    opensExternalUrlUnprompted: unprompted,
+    reserveExternalWindow: vi.fn(() => reserved),
+  };
   const view = renderHook(() => useSendToBring(), {
     wrapper: createTestWrapper(createTestQueryClient(), adapter),
   });
@@ -43,7 +48,61 @@ describe("useSendToBring", () => {
     });
   });
 
-  it("offers a persistent button whose press opens the link, and answers true", async () => {
+  describe("on the web, with the tab opened in the press", () => {
+    const tab = () => ({ open: vi.fn(), close: vi.fn() });
+
+    it("opens the tab before asking, sends it to the link, and shows no toast", async () => {
+      const reserved = tab();
+      let reservedBeforeAsking = false;
+
+      const { result, adapter } = setup(false, reserved);
+
+      serveTRPC(async () => {
+        reservedBeforeAsking = vi.mocked(adapter.reserveExternalWindow).mock.calls.length === 1;
+
+        return { ok: true, deeplink: DEEPLINK };
+      });
+
+      expect(await result.current(ITEMS, {})).toBe(true);
+
+      expect(reservedBeforeAsking).toBe(true);
+      expect(adapter.reserveExternalWindow).toHaveBeenCalledWith("groceries.bring.opening");
+      expect(reserved.open).toHaveBeenCalledWith(DEEPLINK);
+      expect(reserved.close).not.toHaveBeenCalled();
+      expect(adapter.toast.show).not.toHaveBeenCalled();
+    });
+
+    it("closes the tab when Bring! did not take the lines, with the status it got", async () => {
+      const reserved = tab();
+
+      serveTRPC(async () => ({ ok: false, reason: "page-unreachable", status: 403 }));
+      const { result, adapter } = setup(false, reserved);
+
+      expect(await result.current(ITEMS, {})).toBe(false);
+
+      expect(reserved.close).toHaveBeenCalled();
+      expect(reserved.open).not.toHaveBeenCalled();
+      expect(adapter.toast.show).toHaveBeenCalledWith({
+        severity: "warning",
+        title: "groceries.bring.errors.pageUnreachable",
+        description: "groceries.bring.errors.pageStatus",
+      });
+    });
+
+    it("closes the tab when the send threw", async () => {
+      const reserved = tab();
+
+      serveTRPC(async () => {
+        throw new Error("offline");
+      });
+      const { result } = setup(false, reserved);
+
+      expect(await result.current(ITEMS, {})).toBe(false);
+      expect(reserved.close).toHaveBeenCalled();
+    });
+  });
+
+  it("offers a persistent button whose press opens the link where the browser refused the tab", async () => {
     serveTRPC(async () => ({ ok: true, deeplink: DEEPLINK }));
     const { result, adapter } = setup();
 
@@ -69,6 +128,7 @@ describe("useSendToBring", () => {
     expect(await result.current(ITEMS, {})).toBe(true);
 
     expect(adapter.openExternalUrl).toHaveBeenCalledWith(DEEPLINK);
+    expect(adapter.reserveExternalWindow).not.toHaveBeenCalled();
     expect(adapter.toast.show).not.toHaveBeenCalled();
   });
 
@@ -78,6 +138,7 @@ describe("useSendToBring", () => {
     ["bring-unreachable", "unreachable"],
     ["bring-rejected", "rejected"],
     ["rate-limited", "rateLimited"],
+    ["page-unreachable", "pageUnreachable"],
   ])("warns with the %s reason and answers false", async (reason, key) => {
     serveTRPC(async () => ({ ok: false, reason }));
     const { result, adapter } = setup();

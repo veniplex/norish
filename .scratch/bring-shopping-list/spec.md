@@ -27,7 +27,7 @@ The ingredients travel as a **Bring Handoff**: the server stores the lines under
 9. As a household member, I want ingredients already in my pantry to stay apart and unticked, so that Bring! gets what I have to buy and not my staples.
 10. As a household member, I want the amounts sent to match the servings I chose, so that Bring! gets a list for the meal I am cooking.
 11. As a household member, I want Bring! to receive the recipe's name, so that it shows which recipe the items are for.
-12. As a household member on the web, I want an **Open Bring!** button after the items are ready, so that my browser lets the new tab open.
+12. As a household member on the web, I want Bring! to open from the same press that adds the items, and an **Open Bring!** button only when my browser blocked that tab.
 13. As a household member, I want a clear message when Bring! cannot reach the instance, did not answer, refused the items or I sent too many, so that I know what to do next.
 14. As a household member, I want a send that fails offline to say so and not to be replayed later, so that a dead link is never opened an hour on.
 15. As a household member, I want to add ingredients only for recipes I can read, so that a shopping list cannot leak a recipe I have no access to.
@@ -53,7 +53,7 @@ The ingredients travel as a **Bring Handoff**: the server stores the lines under
 
 **The switch is a user-interface switch.** In Bring mode the Groceries tab leaves the navigation, `/groceries/**` redirects to the home page (on the server and, for a live switch, on the client), and the built-in "add to groceries" panel sends its ticked lines to Bring! and keeps its selection, edit-in-place and Pantry split. The Pantry is consulted exactly as before, once, when a recipe is added; the pantry page goes with the Groceries pages and a pantry stays editable from the Ingredient panel. Nothing on the server blocks a grocery write, so REST, recurring groceries and the offline replay of grocery mutations are untouched, and the "on the list" relation is empty in Bring mode because nothing is on a list.
 
-**Two steps on the web.** A browser opens a tab only inside a tap, and the deeplink arrives after an asynchronous call. The send therefore ends in a toast that stays until dismissed, with **Open Bring!**; pressing it opens the link in a new tab without an opener. A platform that opens an external address unprompted opens it straight away; the phone app is that platform.
+**One step on the web.** A browser opens a tab only inside a tap, and the deeplink arrives after an asynchronous call. The press therefore opens a blank tab without an opener, and the tab is sent to the link once it is back, or closed when the send fails. Only where the browser refused that tab does the send end in a toast that stays until dismissed, with **Open Bring!**. Before the deeplink is asked for, the server has Bring!'s recipe parser read the page, so a page Bring! cannot fetch fails in Norish with the status it got (`page-unreachable`), not later inside Bring!. A platform that opens an external address unprompted opens it straight away; the phone app is that platform.
 
 **Realtime.** The setting rides the existing configuration announcement: a member sees the Groceries tab appear or vanish and the labels change when the administrator switches, without a reload.
 

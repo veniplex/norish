@@ -24,6 +24,7 @@ const increment = vi.hoisted(() => vi.fn());
 const assertRecipeAccess = vi.hoisted(() => vi.fn());
 const getRecipeName = vi.hoisted(() => vi.fn());
 const requestDeeplink = vi.hoisted(() => vi.fn());
+const checkImport = vi.hoisted(() => vi.fn());
 const createHandoff = vi.hoisted(() => vi.fn());
 const deleteHandoff = vi.hoisted(() => vi.fn());
 const addressesOf = vi.hoisted(() => vi.fn());
@@ -48,7 +49,7 @@ vi.mock("@norish/shared-server/config/server-config-loader", () => ({
 vi.mock("@norish/auth/secondary-storage", () => ({ valkeySecondaryStorage: { increment } }));
 vi.mock("@norish/db/repositories/recipes", () => ({ getRecipeName }));
 vi.mock("../../src/routers/recipes/helpers", () => ({ assertRecipeAccess }));
-vi.mock("@norish/shared-server/bring/bring-client", () => ({ requestDeeplink }));
+vi.mock("@norish/shared-server/bring/bring-client", () => ({ checkImport, requestDeeplink }));
 vi.mock("@norish/shared-server/bring/handoff-store", () => ({ createHandoff, deleteHandoff }));
 vi.mock("@norish/shared-server/private-addresses", () => ({
   addressesOf,
@@ -79,6 +80,7 @@ beforeEach(() => {
   createHandoff.mockReset().mockResolvedValue("T".repeat(32));
   deleteHandoff.mockReset().mockResolvedValue(undefined);
   requestDeeplink.mockReset().mockResolvedValue({ ok: true, deeplink: DEEPLINK });
+  checkImport.mockReset().mockResolvedValue({ ok: true });
   addressesOf.mockReset().mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
 });
 
@@ -133,6 +135,30 @@ describe("bring.send", () => {
     requestDeeplink.mockResolvedValue({ ok: false, reason: "bring-rejected" });
 
     await expect(caller.send({ items })).resolves.toEqual({ ok: false, reason: "bring-rejected" });
+    expect(deleteHandoff).toHaveBeenCalledWith("T".repeat(32));
+  });
+
+  it("has Bring! read the page before it asks for the link", async () => {
+    await caller.send({ servings: 2, items });
+
+    expect(checkImport).toHaveBeenCalledWith({
+      url: `https://norish.example.com/share/bring/${"T".repeat(32)}`,
+      servings: 2,
+    });
+    expect(checkImport.mock.invocationCallOrder[0]).toBeLessThan(
+      requestDeeplink.mock.invocationCallOrder[0]!
+    );
+  });
+
+  it("answers with the status Bring! got when it could not fetch the page, and takes it down", async () => {
+    checkImport.mockResolvedValue({ ok: false, reason: "page-unreachable", status: 403 });
+
+    await expect(caller.send({ items })).resolves.toEqual({
+      ok: false,
+      reason: "page-unreachable",
+      status: 403,
+    });
+    expect(requestDeeplink).not.toHaveBeenCalled();
     expect(deleteHandoff).toHaveBeenCalledWith("T".repeat(32));
   });
 

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { requestDeeplink } from "@norish/shared-server/bring/bring-client";
+import { checkImport, requestDeeplink } from "@norish/shared-server/bring/bring-client";
 
 const serverConfig = vi.hoisted(() => ({ BRING_API_URL: "https://api.getbring.com" }));
 
@@ -113,5 +113,64 @@ describe("requestDeeplink", () => {
       fetchStub.mockResolvedValueOnce(json({ deeplink: "javascript:alert(1)" }));
       await expect(requestDeeplink(page)).resolves.toEqual(rejected);
     });
+  });
+});
+
+describe("checkImport", () => {
+  const text = (body: string, status: number) => new Response(body, { status });
+
+  it("asks Bring!'s parser to read the page with the servings, and passes when it can", async () => {
+    fetchStub.mockResolvedValue(json({ name: "Lasagne", items: [{ itemId: "Mehl" }] }));
+
+    await expect(
+      checkImport({ url: "https://norish.example/share/bring/tok", servings: 2.4 })
+    ).resolves.toEqual({ ok: true });
+
+    const [url, init] = fetchStub.mock.calls[0] as [string, RequestInit];
+    const asked = new URL(url);
+
+    expect(`${asked.origin}${asked.pathname}`).toBe(
+      "https://api.getbring.com/rest/bringrecipes/parser"
+    );
+    expect(asked.searchParams.get("url")).toBe("https://norish.example/share/bring/tok");
+    expect(asked.searchParams.get("baseQuantity")).toBe("2");
+    expect(asked.searchParams.get("requestedQuantity")).toBe("2");
+    expect(init.redirect).toBe("error");
+  });
+
+  it("reports the status Bring! got when it could not fetch the page", async () => {
+    fetchStub.mockResolvedValueOnce(
+      json(
+        {
+          title: "Bad Request",
+          status: 400,
+          detail:
+            "recipe url is not reachable: recipeUrl='https://n.example/x', method=GET, httpStatus=403, httpMessage='Forbidden'",
+        },
+        400
+      )
+    );
+    await expect(checkImport(page)).resolves.toEqual({
+      ok: false,
+      reason: "page-unreachable",
+      status: 403,
+    });
+
+    fetchStub.mockResolvedValueOnce(json({ detail: "recipe url is not reachable: timeout" }, 400));
+    await expect(checkImport(page)).resolves.toEqual({ ok: false, reason: "page-unreachable" });
+  });
+
+  it("reports a page with no recipe in it as rejected", async () => {
+    fetchStub.mockResolvedValueOnce(text("invalid recipe parsed: no ingredients found", 400));
+
+    await expect(checkImport(page)).resolves.toEqual(rejected);
+  });
+
+  it("reports a network error and a 5xx as unreachable", async () => {
+    fetchStub.mockRejectedValueOnce(new TypeError("fetch failed"));
+    await expect(checkImport(page)).resolves.toEqual(unreachable);
+
+    fetchStub.mockResolvedValueOnce(json({}, 502));
+    await expect(checkImport(page)).resolves.toEqual(unreachable);
   });
 });
