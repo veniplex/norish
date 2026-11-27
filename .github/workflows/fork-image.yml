@@ -1,0 +1,125 @@
+name: Fork image (GHCR)
+
+# Fork-only: builds the `my-setup` branch into an image in the fork owner's own
+# GHCR namespace, so a home server can pull it. Not for upstream — it lives on
+# `my-setup` alone and is no part of any feature branch or PR.
+
+on:
+  push:
+    branches:
+      - my-setup
+  workflow_dispatch:
+
+concurrency:
+  group: fork-image-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: linux/${{ matrix.arch }}
+    # Never on the upstream repository, should this file ever travel there.
+    if: ${{ github.repository != 'norish-recipes/norish' }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker system prune -af
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve image name and versions
+        id: meta
+        run: |
+          set -euo pipefail
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "report=$(node tooling/monorepo/scripts/print-package-versions.mjs)" >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          build-args: |
+            NORISH_VERSION_REPORT_JSON=${{ steps.meta.outputs.report }}
+          outputs: type=image,name=${{ steps.meta.outputs.image }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=fork-image-${{ matrix.arch }}
+          cache-to: type=gha,scope=fork-image-${{ matrix.arch }},mode=min
+
+      - name: Export digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  manifest:
+    name: Manifest
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and inspect the manifest
+        working-directory: /tmp/digests
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          refs=()
+          for digest in *; do refs+=("${image}@sha256:${digest}"); done
+          if [ ${#refs[@]} -eq 0 ]; then
+            echo "No digests were produced by the build jobs." >&2
+            exit 1
+          fi
+          for tag in my-setup "my-setup-${GITHUB_SHA::7}"; do
+            docker buildx imagetools create --tag "${image}:${tag}" "${refs[@]}"
+          done
+          docker buildx imagetools inspect "${image}:my-setup"
