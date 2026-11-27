@@ -280,11 +280,12 @@ test("a hidden Today's meals never reaches the phone's dashboard markup, only th
 });
 
 /**
- * The Floating Bar Style `<html>` carries before any of the app's script runs, and whether the
- * bar's chrome token resolves to the theme's own surface. Inline scripts run; the app's bundles
- * are refused, so nothing can come from hydration.
+ * Who first put the Floating Bar Style on `<html>`, and whether the bar's chrome token resolves to
+ * the theme's own surface once loaded. The server's inline script runs while the page is parsed,
+ * ahead of the shell, so it is the setter when the first frame already has the style; the app's own
+ * sync runs only after hydration, from a bundle.
  */
-async function barBeforeHydration(browser: Browser, kind: DeviceKind) {
+async function floatingBarOnLoad(browser: Browser, kind: DeviceKind) {
   const context = await browser.newContext({
     baseURL: stack.baseURL,
     storageState: { cookies: stack.ownerCookies, origins: [] },
@@ -296,14 +297,28 @@ async function barBeforeHydration(browser: Browser, kind: DeviceKind) {
   try {
     const page = await context.newPage();
 
-    await page.route("**/_next/static/chunks/**", (route) => route.abort());
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.addInitScript(() => {
+      const setAttribute = Element.prototype.setAttribute;
+      const record = window as unknown as { floatingBarSetBy?: string };
+
+      Element.prototype.setAttribute = function (name: string, value: string) {
+        if (name === "data-floating-bar" && record.floatingBarSetBy === undefined) {
+          const script = document.currentScript as HTMLScriptElement | null;
+
+          record.floatingBarSetBy = script && !script.src ? "inline script" : "app";
+        }
+
+        return setAttribute.call(this, name, value);
+      };
+    });
+    await page.goto("/");
 
     return await page.evaluate(() => {
       const root = document.documentElement;
       const style = getComputedStyle(root);
 
       return {
+        setBy: (window as unknown as { floatingBarSetBy?: string }).floatingBarSetBy ?? null,
         attribute: root.getAttribute("data-floating-bar"),
         onSurface:
           style.getPropertyValue("--chrome").trim() ===
@@ -315,16 +330,18 @@ async function barBeforeHydration(browser: Browser, kind: DeviceKind) {
   }
 }
 
-test("a phone set to match the theme has its bar in the theme's colours before hydration, only the phone", async ({
+test("a phone set to match the theme has its bar in the theme's colours from the server's markup, only the phone", async ({
   browser,
 }) => {
   await seed("phone", { floatingBarStyle: "match" });
 
-  expect(await barBeforeHydration(browser, "phone")).toEqual({
+  expect(await floatingBarOnLoad(browser, "phone")).toEqual({
+    setBy: "inline script",
     attribute: "match",
     onSurface: true,
   });
-  expect(await barBeforeHydration(browser, "desktop")).toEqual({
+  expect(await floatingBarOnLoad(browser, "desktop")).toEqual({
+    setBy: null,
     attribute: null,
     onSurface: false,
   });
