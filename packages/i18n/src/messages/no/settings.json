@@ -649,7 +649,7 @@
         "description": "Hvor ingrediensene fra en oppskrift havner når noen legger dem til i listen.",
         "builtin": "Norish-handleliste",
         "bring": "Bring!",
-        "bringNotice": "Når noen legger til ingredienser, henter Bring!s servere en midlertidig offentlig HTTPS-side med oppskriftens navn, antall porsjoner og varelinjene. Denne Norish-instansen må derfor kunne nås fra internett."
+        "bringNotice": "Når noen legger til ingredienser, henter Bring!s servere en midlertidig offentlig HTTPS-side under /share/bring/ med oppskriftens navn, hovedbilde, porsjoner og varelinjer, som slettes etter en time. Denne Norish-instansen må derfor kunne nås fra internett, med /share/bring/ åpen uten innlogging."
       },
       "export": {
         "title": "Oppskriftsarkiv",

@@ -114,7 +114,6 @@
     "addButton": "Legg til i Bring!",
     "ready": "Varene dine er klare for Bring!",
     "open": "Åpne Bring!",
-    "opening": "Åpner Bring!…",
     "errors": {
       "notPublic": "Bring! kan ikke nå denne Norish-instansen. Den må kunne nås fra internett via HTTPS.",
       "unreachable": "Bring! svarte ikke. Prøv igjen om litt.",

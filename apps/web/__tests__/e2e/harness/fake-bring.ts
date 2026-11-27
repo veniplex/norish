@@ -2,10 +2,11 @@
  * Bring!, served by the harness. The browser tests never reach the real service: it would need the
  * instance on the public internet, and it would be someone else's servers fetching our page.
  *
- * It answers what Bring! answers `POST /rest/bringrecipes/deeplink` with, and, as Bring!'s own
- * servers do, fetches the page it was given at once and with no cookie, so the request is the proof
- * that the page needs no session. `refuse()` makes it answer 403, which is what the real service
- * says when it cannot read the page.
+ * It answers Bring!'s two import endpoints. `GET /rest/bringrecipes/parser` and
+ * `POST /rest/bringrecipes/deeplink` both fetch the page they were given at once and with no
+ * cookie, as Bring!'s own servers do, so the request is the proof that the page needs no session.
+ * `breakPages()` has the parser get a 404, which the real one reports as "not reachable" with the
+ * status; `refuse()` makes the deeplink endpoint answer 403, a refusal of the page as such.
  */
 import { createServer } from "node:http";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
@@ -35,7 +36,7 @@ export interface FakeBring {
   opened: string[];
   /** The page URLs the recipe parser was asked to read, in order. */
   parsed: string[];
-  /** Answer 403 from now on, as Bring! does when it cannot read the page. */
+  /** Have the deeplink endpoint answer 403 from now on, so the send ends in `bring-rejected`. */
   refuse: () => void;
   /** Have the recipe parser get a 404 from the instance, as when Bring!'s servers cannot reach the page. */
   breakPages: () => void;

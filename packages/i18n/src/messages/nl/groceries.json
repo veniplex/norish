@@ -114,7 +114,6 @@
     "addButton": "Toevoegen aan Bring!",
     "ready": "Je items staan klaar voor Bring!",
     "open": "Bring! openen",
-    "opening": "Bring! wordt geopend…",
     "errors": {
       "notPublic": "Bring! kan deze Norish-instantie niet bereiken. Die moet via HTTPS vanaf internet bereikbaar zijn.",
       "unreachable": "Bring! reageerde niet. Probeer het zo opnieuw.",

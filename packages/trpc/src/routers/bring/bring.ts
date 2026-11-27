@@ -1,10 +1,15 @@
 import { TRPCError } from "@trpc/server";
 
 import { valkeySecondaryStorage } from "@norish/auth/secondary-storage";
-import { getRecipeName } from "@norish/db/repositories/recipes";
+import type { BringHandoffImage } from "@norish/shared-server/bring/handoff-store";
+import { getRecipeNameAndImage } from "@norish/db/repositories/recipes";
 import { checkImport, requestDeeplink } from "@norish/shared-server/bring/bring-client";
 import { formatBringLine } from "@norish/shared-server/bring/format-line";
-import { createHandoff, deleteHandoff } from "@norish/shared-server/bring/handoff-store";
+import {
+  createHandoff,
+  deleteHandoff,
+  handoffImageFor,
+} from "@norish/shared-server/bring/handoff-store";
 import { handoffUrl, isPubliclyReachable } from "@norish/shared-server/bring/public-url";
 import { getGroceryListProvider } from "@norish/shared-server/config/server-config-loader";
 import { trpcLogger as log } from "@norish/shared-server/logger";
@@ -14,8 +19,14 @@ import { authedProcedure } from "../../middleware";
 import { router } from "../../trpc";
 import { assertRecipeAccess } from "../recipes/helpers";
 
+/**
+ * Each send makes Bring!'s servers fetch a page from this instance, so a person may send thirty
+ * lists in ten minutes: more than a week's planning in one sitting, too few to turn the instance
+ * into a way of making Bring! fetch on someone's behalf.
+ */
 const SENDS_PER_WINDOW = 30;
 const WINDOW_SECONDS = 10 * 60;
+/** The recipe name Bring! shows when the lines come from no single recipe. */
 const FALLBACK_TITLE = "Norish";
 
 /**
@@ -26,11 +37,13 @@ const FALLBACK_TITLE = "Norish";
 const send = authedProcedure
   .input(SendToBringInputSchema)
   .mutation(async ({ ctx, input }): Promise<SendToBringResult> => {
+    // Read again here: a client's cached provider may be stale on an instance that switched back.
     if ((await getGroceryListProvider()) !== "bring") {
       return { ok: false, reason: "not-bring" };
     }
 
-    // An item whose name is empty once trimmed is ignored; a send with none left has nothing to say.
+    // The client already leaves out a line with no name; the server does not count on it. A send
+    // with none left has nothing to say.
     const items = input.items.filter((item) => item.name.length > 0);
 
     if (items.length === 0) {
@@ -38,10 +51,14 @@ const send = authedProcedure
     }
 
     let title = input.title ?? FALLBACK_TITLE;
+    let image: BringHandoffImage | null = null;
 
     if (input.recipeId) {
       await assertRecipeAccess(ctx, input.recipeId, "view");
-      title = (await getRecipeName(input.recipeId)) ?? title;
+      const recipe = await getRecipeNameAndImage(input.recipeId);
+
+      title = recipe?.name ?? title;
+      image = handoffImageFor(input.recipeId, recipe?.image ?? null);
     }
 
     if (!(await isPubliclyReachable())) {
@@ -64,6 +81,7 @@ const send = authedProcedure
       title,
       servings: input.servings ?? 1,
       lines: items.map(formatBringLine),
+      image,
     });
     const page = { url: handoffUrl(token), servings: input.servings };
     // Bring! reads the page only when the reader opens the link, so it is read once here first:

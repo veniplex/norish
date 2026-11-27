@@ -22,7 +22,7 @@ const serverConfig = vi.hoisted(() => ({
 const getGroceryListProvider = vi.hoisted(() => vi.fn());
 const increment = vi.hoisted(() => vi.fn());
 const assertRecipeAccess = vi.hoisted(() => vi.fn());
-const getRecipeName = vi.hoisted(() => vi.fn());
+const getRecipeNameAndImage = vi.hoisted(() => vi.fn());
 const requestDeeplink = vi.hoisted(() => vi.fn());
 const checkImport = vi.hoisted(() => vi.fn());
 const createHandoff = vi.hoisted(() => vi.fn());
@@ -47,10 +47,14 @@ vi.mock("@norish/shared-server/config/server-config-loader", () => ({
   getRecipePermissionPolicy: vi.fn(),
 }));
 vi.mock("@norish/auth/secondary-storage", () => ({ valkeySecondaryStorage: { increment } }));
-vi.mock("@norish/db/repositories/recipes", () => ({ getRecipeName }));
+vi.mock("@norish/db/repositories/recipes", () => ({ getRecipeNameAndImage }));
 vi.mock("../../src/routers/recipes/helpers", () => ({ assertRecipeAccess }));
 vi.mock("@norish/shared-server/bring/bring-client", () => ({ checkImport, requestDeeplink }));
-vi.mock("@norish/shared-server/bring/handoff-store", () => ({ createHandoff, deleteHandoff }));
+vi.mock("@norish/shared-server/bring/handoff-store", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@norish/shared-server/bring/handoff-store")>()),
+  createHandoff,
+  deleteHandoff,
+}));
 vi.mock("@norish/shared-server/private-addresses", () => ({
   addressesOf,
   isPrivate: ({ address }: { address: string }) => address.startsWith("10."),
@@ -76,7 +80,7 @@ beforeEach(() => {
   getGroceryListProvider.mockReset().mockResolvedValue("bring");
   increment.mockReset().mockResolvedValue(1);
   assertRecipeAccess.mockReset().mockResolvedValue(undefined);
-  getRecipeName.mockReset().mockResolvedValue("Lasagne");
+  getRecipeNameAndImage.mockReset().mockResolvedValue({ name: "Lasagne", image: null });
   createHandoff.mockReset().mockResolvedValue("T".repeat(32));
   deleteHandoff.mockReset().mockResolvedValue(undefined);
   requestDeeplink.mockReset().mockResolvedValue({ ok: true, deeplink: DEEPLINK });
@@ -94,11 +98,31 @@ describe("bring.send", () => {
       title: "Lasagne",
       servings: 4,
       lines: ["200 g Mehl", "2.5 Eier"],
+      image: null,
     });
     expect(requestDeeplink).toHaveBeenCalledWith({
       url: `https://norish.example.com/share/bring/${"T".repeat(32)}`,
       servings: 4,
     });
+  });
+
+  it("hands over the recipe's stored picture by its file, and an imported one by its address", async () => {
+    getRecipeNameAndImage.mockResolvedValueOnce({
+      name: "Lasagne",
+      image: `/recipes/${RECIPE_ID}/gallery-1.jpg`,
+    });
+    await caller.send({ recipeId: RECIPE_ID, items });
+
+    getRecipeNameAndImage.mockResolvedValueOnce({
+      name: "Lasagne",
+      image: "https://cdn.example/lasagne.jpg",
+    });
+    await caller.send({ recipeId: RECIPE_ID, items });
+
+    expect(createHandoff.mock.calls.map(([handoff]) => handoff.image)).toEqual([
+      { recipeId: RECIPE_ID, file: "gallery-1.jpg" },
+      { url: "https://cdn.example/lasagne.jpg" },
+    ]);
   });
 
   it("uses the given title without a recipe, and Norish without either", async () => {
@@ -175,7 +199,7 @@ describe("bring.send", () => {
       code: "FORBIDDEN",
     });
     expect(increment).not.toHaveBeenCalled();
-    expect(getRecipeName).not.toHaveBeenCalled();
+    expect(getRecipeNameAndImage).not.toHaveBeenCalled();
     expect(createHandoff).not.toHaveBeenCalled();
     expect(requestDeeplink).not.toHaveBeenCalled();
   });

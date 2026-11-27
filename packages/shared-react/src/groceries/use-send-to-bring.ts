@@ -26,15 +26,14 @@ const FAILURE_TITLES = {
 } as const satisfies Record<(typeof BRING_FAILURE_REASONS)[number], string>;
 
 /**
- * Sends lines to Bring! and takes the reader there. A phone opens Bring! itself; the web opens a
- * blank tab in the press and sends it to Bring! once the link is back, and only where the browser
- * refused that tab offers a button on a toast instead. Must be called in the press itself, before
- * any await. Says how it failed; resolves true only once Bring! took the lines.
+ * Sends lines to Bring! and takes the reader there: the link opens as soon as it is back. A
+ * browser that no longer counts that as the reader's press blocks the tab; then a toast offers a
+ * button whose press opens it. Called from the press itself, so the browser's few seconds start
+ * there. Says how it failed; resolves true only once Bring! took the lines.
  */
 export function useSendToBring() {
   const trpc = useTRPC();
-  const { toast, showError, openExternalUrl, opensExternalUrlUnprompted, reserveExternalWindow } =
-    usePlatform();
+  const { toast, showError, openExternalUrl } = usePlatform();
   const { mutateAsync } = useMutation(trpc.bring.send.mutationOptions());
 
   return async (items: BringLine[], context: BringContext): Promise<boolean> => {
@@ -51,24 +50,18 @@ export function useSendToBring() {
       return false;
     }
 
-    // Before the await: past it, a browser no longer counts this as the reader's press.
-    const reserved = opensExternalUrlUnprompted
-      ? null
-      : reserveExternalWindow(toast.translate("groceries.bring.opening"));
-
+    // Assigned outside the try: the React Compiler does not take a conditional inside one.
     let result: SendToBringResult;
 
     try {
       result = await mutateAsync({ ...context, items: usable });
     } catch (error) {
-      if (reserved) reserved.close();
       showError(error, "bring:send", toast.translate("groceries.bring.errors.failed"));
 
       return false;
     }
 
     if (!result.ok) {
-      if (reserved) reserved.close();
       toast.show({
         severity: "warning",
         title: toast.translate(FAILURE_TITLES[result.reason]),
@@ -86,11 +79,7 @@ export function useSendToBring() {
 
     const { deeplink } = result;
 
-    if (opensExternalUrlUnprompted) {
-      openExternalUrl(deeplink);
-    } else if (reserved) {
-      reserved.open(deeplink);
-    } else {
+    if (!openExternalUrl(deeplink)) {
       toast.show({
         severity: "success",
         title: toast.translate("groceries.bring.ready"),

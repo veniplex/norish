@@ -114,7 +114,6 @@
     "addButton": "أضف إلى Bring!",
     "ready": "عناصرك جاهزة لـ Bring!",
     "open": "افتح Bring!",
-    "opening": "جارٍ فتح Bring!…",
     "errors": {
       "notPublic": "لا يستطيع Bring! الوصول إلى نسخة Norish هذه. يجب أن تكون متاحة من الإنترنت عبر HTTPS.",
       "unreachable": "لم يستجب Bring!. حاول مرة أخرى بعد قليل.",

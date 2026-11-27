@@ -649,7 +649,7 @@
         "description": "Waar de ingrediënten van een recept naartoe gaan als iemand ze aan de lijst toevoegt.",
         "builtin": "Norish-boodschappenlijst",
         "bring": "Bring!",
-        "bringNotice": "Als iemand ingrediënten toevoegt, halen de servers van Bring! een tijdelijke openbare HTTPS-pagina op met de receptnaam, het aantal porties en de itemregels. Deze Norish-instantie moet dus vanaf internet bereikbaar zijn."
+        "bringNotice": "Wanneer iemand ingrediënten toevoegt, halen de servers van Bring! een tijdelijke openbare HTTPS-pagina op onder /share/bring/, met de receptnaam, de hoofdfoto, de porties en de artikelregels, die na een uur wordt verwijderd. Deze Norish-instantie moet daarom vanaf het internet bereikbaar zijn, met /share/bring/ open zonder login."
       },
       "export": {
         "title": "Archief",

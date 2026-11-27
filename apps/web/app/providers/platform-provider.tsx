@@ -113,35 +113,20 @@ export function WebPlatformProvider({
         context,
       }),
     storage: browserStorage,
-    // A press is the gesture that lets a popup open; the answer of an async call is not.
+    // A browser opens a tab for a few seconds after a press, so a link that comes back from an
+    // async call usually still opens; one that blocks it says so with a null window. `noopener`
+    // would make every open answer null, so the tab's link back to this page is cut by hand,
+    // while the tab is still the blank one the browser creates first.
     openExternalUrl: (url) => {
-      if (isOpenableExternalUrl(url)) window.open(url, "_blank", "noopener,noreferrer");
-    },
-    // Opened blank in the press, sent on once the link is back. `noopener` would hide the tab from
-    // us, so the link to this page is cut by hand instead.
-    reserveExternalWindow: (placeholder) => {
-      const opened = window.open("about:blank", "_blank");
+      if (!isOpenableExternalUrl(url)) return false;
 
-      if (!opened) return null;
+      const opened = window.open(url, "_blank");
+
+      if (!opened) return false;
       opened.opener = null;
-      try {
-        if (placeholder) {
-          opened.document.title = placeholder;
-          opened.document.body.textContent = placeholder;
-        }
-      } catch {
-        // A placeholder is only a courtesy while the link is on its way.
-      }
 
-      return {
-        open: (url) => {
-          if (isOpenableExternalUrl(url)) opened.location.replace(url);
-          else opened.close();
-        },
-        close: () => opened.close(),
-      };
+      return true;
     },
-    opensExternalUrlUnprompted: false,
     supportsExternalShoppingList: true,
     deviceKind: kind,
     session,

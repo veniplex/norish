@@ -7,7 +7,8 @@ import { arriveAtTop } from "@/lib/scroll-memory";
 
 import { useGroceryListProvider } from "@norish/shared-react/config";
 
-// The navbar's tabs, left to right: the desktop bar shows the nav items, the phone bar adds Settings.
+// Every tab the navbar can show, left to right: the desktop bar shows the nav items, the phone bar
+// adds Settings. `useNavTabs` drops the ones an instance does not use.
 export const NAV_TABS = [...siteConfig.navItems.map((item) => item.href), SETTINGS_HREF];
 
 const GROCERIES_HREF = "/groceries";
