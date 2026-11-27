@@ -124,14 +124,18 @@ test("the grocery list's address takes a member home", async () => {
 test("a recipe's ingredients go to Bring! as a public schema.org Recipe, and not onto the list", async () => {
   const panel = await openPanel("Add to Bring!");
 
-  await panel.getByRole("button", { name: "Add to Bring!" }).click();
+  // The press itself opens the tab, and the tab goes on to Bring!'s link: no second tap.
+  const [opened] = await Promise.all([
+    ownerContext.waitForEvent("page"),
+    panel.getByRole("button", { name: "Add to Bring!" }).click(),
+  ]);
 
-  await expect(owner.getByText("Your items are ready for Bring!")).toBeVisible();
-  const open = owner.getByRole("button", { name: "Open Bring!" });
+  await opened.waitForURL(`${stack.bring.url}/deeplink/1`);
+  await opened.close();
+  await expect(owner.getByRole("button", { name: "Open Bring!" })).toHaveCount(0);
 
-  await expect(open).toBeVisible();
-
-  // Bring! was asked once, for this instance's page, as the web app says.
+  // Bring!'s parser read the page first, then Bring! was asked once, for this instance's page.
+  expect(stack.bring.parsed).toHaveLength(1);
   expect(stack.bring.requests).toHaveLength(1);
   const [sent] = stack.bring.requests;
   const { body, pageStatus, pageHtml } = sent!;
@@ -147,13 +151,29 @@ test("a recipe's ingredients go to Bring! as a public schema.org Recipe, and not
 
   // Nothing landed on the built-in list.
   expect(await readGroceryNames(stack)).toEqual([EARLIER_GROCERY]);
+});
 
-  // The tap is what opens the tab, and it opens Bring!'s link.
-  const [opened] = await Promise.all([ownerContext.waitForEvent("page"), open.click()]);
+test("when Bring! cannot fetch the page, the member is told the status, and the tab closes", async () => {
+  const panel = await openPanel("Add to Bring!");
+  const parsedBefore = stack.bring.parsed.length;
+  const requestsBefore = stack.bring.requests.length;
 
-  await opened.waitForLoadState("domcontentloaded");
-  expect(opened.url()).toBe(`${stack.bring.url}/deeplink/1`);
-  await opened.close();
+  // The parser reads a token that does not exist, so the instance answers it 404.
+  stack.bring.breakPages();
+
+  const [opened] = await Promise.all([
+    ownerContext.waitForEvent("page"),
+    panel.getByRole("button", { name: "Add to Bring!" }).click(),
+  ]);
+
+  await expect(owner.getByText(/Bring! couldn't open the page Norish made for it/)).toBeVisible();
+  await expect(owner.getByText("Your server answered HTTP 404.")).toBeVisible();
+  await expect.poll(() => opened.isClosed()).toBe(true);
+  await expect(panel).toBeVisible();
+  expect(stack.bring.parsed).toHaveLength(parsedBefore + 1);
+  // Bring! was never asked for a link.
+  expect(stack.bring.requests).toHaveLength(requestsBefore);
+  stack.bring.reset();
 });
 
 test("when Bring! cannot read the page, the member is told and the panel stays open", async () => {

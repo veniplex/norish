@@ -40,13 +40,19 @@ export const BRING_FAILURE_REASONS = [
   "bring-unreachable",
   "bring-rejected",
   "rate-limited",
+  /** Bring!'s servers could not fetch the handoff page; `status` is what this server answered them. */
+  "page-unreachable",
 ] as const;
 
 export const BringFailureReasonSchema = z.enum(BRING_FAILURE_REASONS);
 
 export const SendToBringResultSchema = z.discriminatedUnion("ok", [
   z.object({ ok: z.literal(true), deeplink: deeplinkSchema }),
-  z.object({ ok: z.literal(false), reason: BringFailureReasonSchema }),
+  z.object({
+    ok: z.literal(false),
+    reason: BringFailureReasonSchema,
+    status: z.number().int().optional(),
+  }),
 ]);
 
 export type BringItem = z.infer<typeof BringItemSchema>;

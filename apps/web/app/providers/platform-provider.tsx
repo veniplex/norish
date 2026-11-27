@@ -113,9 +113,33 @@ export function WebPlatformProvider({
         context,
       }),
     storage: browserStorage,
-    // The press of a toast's button is the gesture that lets a popup open; an async call is not.
+    // A press is the gesture that lets a popup open; the answer of an async call is not.
     openExternalUrl: (url) => {
       if (isOpenableExternalUrl(url)) window.open(url, "_blank", "noopener,noreferrer");
+    },
+    // Opened blank in the press, sent on once the link is back. `noopener` would hide the tab from
+    // us, so the link to this page is cut by hand instead.
+    reserveExternalWindow: (placeholder) => {
+      const opened = window.open("about:blank", "_blank");
+
+      if (!opened) return null;
+      opened.opener = null;
+      try {
+        if (placeholder) {
+          opened.document.title = placeholder;
+          opened.document.body.textContent = placeholder;
+        }
+      } catch {
+        // A placeholder is only a courtesy while the link is on its way.
+      }
+
+      return {
+        open: (url) => {
+          if (isOpenableExternalUrl(url)) opened.location.replace(url);
+          else opened.close();
+        },
+        close: () => opened.close(),
+      };
     },
     opensExternalUrlUnprompted: false,
     supportsExternalShoppingList: true,

@@ -1,6 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
 
-import { MAX_BRING_ITEMS, type BRING_FAILURE_REASONS } from "@norish/shared/contracts/zod/bring";
+import {
+  MAX_BRING_ITEMS,
+  type BRING_FAILURE_REASONS,
+  type SendToBringResult,
+} from "@norish/shared/contracts/zod/bring";
 
 import { usePlatform } from "../platform/platform";
 import { useTRPC } from "../trpc";
@@ -18,16 +22,19 @@ const FAILURE_TITLES = {
   "bring-unreachable": "groceries.bring.errors.unreachable",
   "bring-rejected": "groceries.bring.errors.rejected",
   "rate-limited": "groceries.bring.errors.rateLimited",
+  "page-unreachable": "groceries.bring.errors.pageUnreachable",
 } as const satisfies Record<(typeof BRING_FAILURE_REASONS)[number], string>;
 
 /**
- * Sends lines to Bring! and gets the reader there: a phone opens Bring! itself, the web offers a
- * button on a toast, whose press is the tap a browser needs to open a tab. Says how it failed;
- * resolves true only once Bring! took the lines.
+ * Sends lines to Bring! and takes the reader there. A phone opens Bring! itself; the web opens a
+ * blank tab in the press and sends it to Bring! once the link is back, and only where the browser
+ * refused that tab offers a button on a toast instead. Must be called in the press itself, before
+ * any await. Says how it failed; resolves true only once Bring! took the lines.
  */
 export function useSendToBring() {
   const trpc = useTRPC();
-  const { toast, showError, openExternalUrl, opensExternalUrlUnprompted } = usePlatform();
+  const { toast, showError, openExternalUrl, opensExternalUrlUnprompted, reserveExternalWindow } =
+    usePlatform();
   const { mutateAsync } = useMutation(trpc.bring.send.mutationOptions());
 
   return async (items: BringLine[], context: BringContext): Promise<boolean> => {
@@ -44,31 +51,55 @@ export function useSendToBring() {
       return false;
     }
 
+    // Before the await: past it, a browser no longer counts this as the reader's press.
+    const reserved = opensExternalUrlUnprompted
+      ? null
+      : reserveExternalWindow(toast.translate("groceries.bring.opening"));
+
+    let result: SendToBringResult;
+
     try {
-      const result = await mutateAsync({ ...context, items: usable });
-
-      if (!result.ok) {
-        toast.show({ severity: "warning", title: toast.translate(FAILURE_TITLES[result.reason]) });
-
-        return false;
-      }
-      if (opensExternalUrlUnprompted) {
-        openExternalUrl(result.deeplink);
-      } else {
-        toast.show({
-          severity: "success",
-          title: toast.translate("groceries.bring.ready"),
-          actionLabel: toast.translate("groceries.bring.open"),
-          onActionPress: () => openExternalUrl(result.deeplink),
-          persistent: true,
-        });
-      }
-
-      return true;
+      result = await mutateAsync({ ...context, items: usable });
     } catch (error) {
+      if (reserved) reserved.close();
       showError(error, "bring:send", toast.translate("groceries.bring.errors.failed"));
 
       return false;
     }
+
+    if (!result.ok) {
+      if (reserved) reserved.close();
+      toast.show({
+        severity: "warning",
+        title: toast.translate(FAILURE_TITLES[result.reason]),
+        ...(result.status === undefined
+          ? {}
+          : {
+              description: toast.translate("groceries.bring.errors.pageStatus", {
+                status: result.status,
+              }),
+            }),
+      });
+
+      return false;
+    }
+
+    const { deeplink } = result;
+
+    if (opensExternalUrlUnprompted) {
+      openExternalUrl(deeplink);
+    } else if (reserved) {
+      reserved.open(deeplink);
+    } else {
+      toast.show({
+        severity: "success",
+        title: toast.translate("groceries.bring.ready"),
+        actionLabel: toast.translate("groceries.bring.open"),
+        onActionPress: () => openExternalUrl(deeplink),
+        persistent: true,
+      });
+    }
+
+    return true;
   };
 }

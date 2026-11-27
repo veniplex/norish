@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 
 import { valkeySecondaryStorage } from "@norish/auth/secondary-storage";
 import { getRecipeName } from "@norish/db/repositories/recipes";
-import { requestDeeplink } from "@norish/shared-server/bring/bring-client";
+import { checkImport, requestDeeplink } from "@norish/shared-server/bring/bring-client";
 import { formatBringLine } from "@norish/shared-server/bring/format-line";
 import { createHandoff, deleteHandoff } from "@norish/shared-server/bring/handoff-store";
 import { handoffUrl, isPubliclyReachable } from "@norish/shared-server/bring/public-url";
@@ -65,7 +65,11 @@ const send = authedProcedure
       servings: input.servings ?? 1,
       lines: items.map(formatBringLine),
     });
-    const result = await requestDeeplink({ url: handoffUrl(token), servings: input.servings });
+    const page = { url: handoffUrl(token), servings: input.servings };
+    // Bring! reads the page only when the reader opens the link, so it is read once here first:
+    // a page its servers cannot fetch fails now, with the reason, not later inside Bring!.
+    const checked = await checkImport(page);
+    const result = checked.ok ? await requestDeeplink(page) : checked;
 
     // A page Bring! never took has no reason to stay up for the hour.
     if (!result.ok) await deleteHandoff(token);

@@ -109,6 +109,7 @@ export function MobilePlatformProvider({
     },
     // The phone hands a link to another app without a popup blocker, so the add opens Bring! itself.
     opensExternalUrlUnprompted: true,
+    reserveExternalWindow: () => null,
     // Phase one is the web only: the phone keeps the built-in grocery list whatever the setting says.
     supportsExternalShoppingList: false,
     deviceKind,

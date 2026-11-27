@@ -19,6 +19,7 @@ export function fakePlatformAdapter(
     showError: vi.fn(),
     storage: { getItem: () => null, setItem: vi.fn(), removeItem: vi.fn() },
     openExternalUrl: vi.fn(),
+    reserveExternalWindow: vi.fn(() => null),
     supportsExternalShoppingList: true,
     opensExternalUrlUnprompted: false,
     deviceKind,

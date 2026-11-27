@@ -33,6 +33,9 @@ export type PlatformStorage = {
   removeItem: (key: string) => void | Promise<void>;
 };
 
+/** A tab opened ahead of its link: `open` sends it there, `close` drops it when there is none. */
+export type ExternalWindow = { open: (url: string) => void; close: () => void };
+
 /** Why the reader leaves the signed-in app: their own Sign-out, or Session Expiry. */
 export type LeaveReason = "sign-out" | "expiry";
 
@@ -54,6 +57,12 @@ export type PlatformAdapter = {
   storage: PlatformStorage;
   /** Opens a link outside the app: a new tab on the web, the system handler on a phone. */
   openExternalUrl: (url: string) => void;
+  /**
+   * Opens a blank tab now, in the press that asked for it, to send to a link that is not known yet:
+   * a browser lets only the press itself open a tab, not the answer of an async call. Null where the
+   * platform needs none (`opensExternalUrlUnprompted`) or the browser refused it.
+   */
+  reserveExternalWindow: (placeholder?: string) => ExternalWindow | null;
   /**
    * Whether this app follows the instance's Shopping List Provider setting. Only the web does
    * today: where it is false the app keeps the built-in grocery list whatever the setting says.
