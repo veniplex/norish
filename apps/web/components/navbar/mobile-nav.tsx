@@ -32,7 +32,7 @@ const TAB_ICONS: Record<string, typeof HomeIcon> = {
 
 // Both floating pieces share one solid treatment on the chrome tokens. By
 // default those are the opposite theme's ground, so the bar contrasts with the
-// cards scrolling under it (ADR-0020); the reader's Floating bar style
+// cards scrolling under it (ADR-0020); the reader's Floating Bar Style
 // `match` redefines the tokens in the active theme's own colours, so nothing
 // here changes with it.
 const barSurfaceClassName =

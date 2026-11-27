@@ -297,34 +297,31 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Floating bar style: `match`.
+   Floating Bar Style: `match`.
 
    The chrome tokens (tooling/tailwind/heroui-theme.css) default to the OPPOSITE theme's ground
-   (`contrast`, ADR-0020). The Floating bar style Device Preference sets
+   (`contrast`, ADR-0020). The Floating Bar Style Device Preference sets
    `data-floating-bar="match"` on <html> (lib/floating-bar-style.ts), and these blocks redefine
-   the same five tokens from the ACTIVE theme's own surface, border, foreground and muted values,
-   so every floating bar follows with no per-component change. The values are literals copied
-   from the theme file, not var() references: a recipe page's dish tint rebuilds --surface in its
-   scope, and the bar must not change with the page under it.
+   the same five tokens from the ACTIVE theme's own tokens, so every floating bar follows with no
+   per-component change. They are declared on <html> and resolved there, so a recipe page's dish
+   tint, which rebuilds --surface in its own scope, never reaches the bar.
 
-   The bar is one step above the cards (light: the white card surface; dark: surface-secondary,
-   a step over the 23.5% card) with the next border step and the existing shadow to separate it.
-   Text is the theme's foreground (and its muted on idle tabs), the same pairs as on the page. */
+   Light: the card's own white, set apart from the cards by the border and the shadow the bar
+   already carries. Dark: surface-secondary, a step over the card. Text keeps the theme's
+   foreground and, on idle tabs, its muted: the same pairs as on the page. The light block also
+   matches a bare <html>, which is the light theme until the theme class is set. */
 @layer components {
-  :root[data-floating-bar="match"]:is(.light, [data-theme="light"]) {
-    --chrome: oklch(100% 0.0008 150.36);
-    --chrome-border: oklch(86.2% 0.014 86);
-    --chrome-foreground: oklch(21.03% 0.0015 150.36);
-    --chrome-hover: oklch(91.2% 0.013 86);
-    --chrome-muted: oklch(52.5% 0.012 80);
+  :root[data-floating-bar="match"] {
+    --chrome: var(--untinted-surface);
+    --chrome-border: var(--untinted-surface-tertiary);
+    --chrome-foreground: var(--foreground);
+    --chrome-hover: var(--untinted-surface-secondary);
+    --chrome-muted: var(--muted);
   }
 
   :root[data-floating-bar="match"]:is(.dark, [data-theme="dark"]) {
-    --chrome: oklch(26.4% 0.008 80);
-    --chrome-border: oklch(33.8% 0.009 80);
-    --chrome-foreground: oklch(99.11% 0.0015 150.36);
-    --chrome-hover: oklch(33.8% 0.009 80);
-    --chrome-muted: oklch(71.5% 0.011 80);
+    --chrome: var(--untinted-surface-secondary);
+    --chrome-hover: var(--untinted-surface-tertiary);
   }
 }
 

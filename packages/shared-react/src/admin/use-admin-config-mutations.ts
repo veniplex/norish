@@ -61,10 +61,7 @@ function useSaveAndTest<TData extends WriteResult, TError, TVariables, TTested, 
   };
 }
 
-/**
- * Registration, the languages users choose from, and where recipes add to the list (the
- * Shopping List Provider); the language save toasts how it went.
- */
+/** Registration, the languages users choose from and where recipes add to the list; the language save toasts how it went. */
 export function useGeneralConfigMutations() {
   const trpc = useTRPC();
   const reread = useReread();

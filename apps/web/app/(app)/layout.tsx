@@ -41,6 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <>
+      {/* Ahead of the shell, so <html> carries the style before the bar's first frame. */}
       <FloatingBarStyleScript style={deviceBlocks(preferences)[kind].floatingBarStyle} />
       <AppShell
         seed={{

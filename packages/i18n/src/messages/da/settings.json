@@ -649,7 +649,7 @@
         "description": "Hvor ingredienserne fra en opskrift havner, når nogen føjer dem til listen.",
         "builtin": "Norish-indkøbsliste",
         "bring": "Bring!",
-        "bringNotice": "Når nogen tilføjer ingredienser, henter Bring!s servere en midlertidig offentlig HTTPS-side under /share/bring/ med opskriftens navn, hovedbillede, portioner og varelinjer, som slettes efter en time. Denne Norish-instans skal derfor kunne nås fra internettet, med /share/bring/ åben uden login."
+        "bringNotice": "Når nogen tilføjer ingredienser, henter Bring!s servere en midlertidig offentlig HTTPS-side med opskriftens navn, antal portioner og varelinjerne. Denne Norish-instans skal derfor kunne nås fra internettet."
       },
       "export": {
         "title": "Opskriftsarkiv",

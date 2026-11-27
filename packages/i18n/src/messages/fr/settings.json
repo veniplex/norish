@@ -649,7 +649,7 @@
         "description": "Où vont les ingrédients d'une recette quand quelqu'un les ajoute à la liste.",
         "builtin": "Liste de courses Norish",
         "bring": "Bring!",
-        "bringNotice": "Quand quelqu'un ajoute des ingrédients, les serveurs de Bring! récupèrent une page HTTPS publique temporaire, sous /share/bring/, qui contient le nom de la recette, sa photo principale, les portions et les lignes d'articles, et qui est supprimée au bout d'une heure. Cette instance Norish doit donc être accessible depuis Internet, avec /share/bring/ ouvert sans connexion."
+        "bringNotice": "Quand quelqu'un ajoute des ingrédients, les serveurs de Bring! récupèrent une page HTTPS publique temporaire contenant le nom de la recette, les portions et les lignes d'articles. Cette instance Norish doit donc être accessible depuis Internet."
       },
       "export": {
         "title": "Archive de recettes",

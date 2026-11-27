@@ -135,35 +135,86 @@ describe("a persistent toast", () => {
 });
 
 describe("the web's external links", () => {
-  it("opens one in a new tab that cannot reach back to the app, and says it did", () => {
-    const tab = { opener: {} as unknown };
-    const open = vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
-
-    expect(renderPlatform().openExternalUrl("https://getbring.onelink.me/abc")).toBe(true);
-
-    expect(open).toHaveBeenCalledExactlyOnceWith("https://getbring.onelink.me/abc", "_blank");
-    expect(tab.opener).toBeNull();
-    open.mockRestore();
-  });
-
-  it("says so when the browser blocked the tab", () => {
+  it("opens one in a new tab that cannot reach back to the app", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(null);
 
-    expect(renderPlatform().openExternalUrl("https://getbring.onelink.me/abc")).toBe(false);
+    renderPlatform().openExternalUrl("https://getbring.onelink.me/abc");
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      "https://getbring.onelink.me/abc",
+      "_blank",
+      "noopener,noreferrer"
+    );
     open.mockRestore();
   });
 
   it("opens http as well, and nothing that is not http or https", () => {
-    const open = vi.spyOn(window, "open").mockReturnValue({ opener: null } as unknown as Window);
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
     const { openExternalUrl } = renderPlatform();
 
-    expect(openExternalUrl("http://localhost:4010/open")).toBe(true);
-    expect(openExternalUrl("javascript:alert(1)")).toBe(false);
-    expect(openExternalUrl("data:text/html,hi")).toBe(false);
-    expect(openExternalUrl("not a url")).toBe(false);
+    openExternalUrl("http://localhost:4010/open");
+    openExternalUrl("javascript:alert(1)");
+    openExternalUrl("data:text/html,hi");
+    openExternalUrl("not a url");
 
-    expect(open).toHaveBeenCalledExactlyOnceWith("http://localhost:4010/open", "_blank");
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      "http://localhost:4010/open",
+      "_blank",
+      "noopener,noreferrer"
+    );
     open.mockRestore();
+  });
+
+  describe("a tab opened ahead of its link", () => {
+    function fakeTab() {
+      const replace = vi.fn();
+      const close = vi.fn();
+      const tab = {
+        opener: {} as unknown,
+        document: { title: "", body: { textContent: "" } },
+        location: { replace },
+        close,
+      };
+
+      return { tab, replace, close };
+    }
+
+    it("opens blank, cut from the app, with the placeholder, and goes to the link", () => {
+      const { tab, replace } = fakeTab();
+      const open = vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
+
+      const reserved = renderPlatform().reserveExternalWindow("Opening Bring!…");
+
+      expect(open).toHaveBeenCalledExactlyOnceWith("about:blank", "_blank");
+      expect(tab.opener).toBeNull();
+      expect(tab.document.body.textContent).toBe("Opening Bring!…");
+
+      reserved?.open("https://getbring.onelink.me/abc");
+      expect(replace).toHaveBeenCalledExactlyOnceWith("https://getbring.onelink.me/abc");
+      open.mockRestore();
+    });
+
+    it("closes instead of going anywhere that is not http or https", () => {
+      const { tab, replace, close } = fakeTab();
+      const open = vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
+
+      renderPlatform().reserveExternalWindow()?.open("javascript:alert(1)");
+
+      expect(replace).not.toHaveBeenCalled();
+      expect(close).toHaveBeenCalled();
+      open.mockRestore();
+    });
+
+    it("is null when the browser refused the tab", () => {
+      const open = vi.spyOn(window, "open").mockReturnValue(null);
+
+      expect(renderPlatform().reserveExternalWindow()).toBeNull();
+      open.mockRestore();
+    });
+  });
+
+  it("is not opened after an async call: a browser blocks that popup", () => {
+    expect(renderPlatform().opensExternalUrlUnprompted).toBe(false);
   });
 
   it("follows the instance's shopping list provider setting", () => {

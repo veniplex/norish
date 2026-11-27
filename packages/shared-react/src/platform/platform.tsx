@@ -33,6 +33,9 @@ export type PlatformStorage = {
   removeItem: (key: string) => void | Promise<void>;
 };
 
+/** A tab opened ahead of its link: `open` sends it there, `close` drops it when there is none. */
+export type ExternalWindow = { open: (url: string) => void; close: () => void };
+
 /** Why the reader leaves the signed-in app: their own Sign-out, or Session Expiry. */
 export type LeaveReason = "sign-out" | "expiry";
 
@@ -52,17 +55,21 @@ export type PlatformAdapter = {
   /** Tells the reader an operation failed, under `title` if given; `context` names where, for the log. */
   showError: (error: unknown, context: string, title?: string) => void;
   storage: PlatformStorage;
+  /** Opens a link outside the app: a new tab on the web, the system handler on a phone. */
+  openExternalUrl: (url: string) => void;
   /**
-   * Opens a link outside the app: a new tab on the web, the system handler on a phone. False when
-   * it did not open, such as a link of another scheme, or a browser that blocked the tab because
-   * the press that asked for it was too long ago.
+   * Opens a blank tab now, in the press that asked for it, to send to a link that is not known yet:
+   * a browser lets only the press itself open a tab, not the answer of an async call. Null where the
+   * platform needs none (`opensExternalUrlUnprompted`) or the browser refused it.
    */
-  openExternalUrl: (url: string) => boolean;
+  reserveExternalWindow: (placeholder?: string) => ExternalWindow | null;
   /**
    * Whether this app follows the instance's Shopping List Provider setting. Only the web does
    * today: where it is false the app keeps the built-in grocery list whatever the setting says.
    */
   supportsExternalShoppingList: boolean;
+  /** Whether `openExternalUrl` may run after an async call: a web browser blocks that popup, a phone does not. */
+  opensExternalUrlUnprompted: boolean;
   deviceKind: DeviceKind;
   session: PlatformSession;
   /** Ends the session in `scope`; rejects when it could not. */

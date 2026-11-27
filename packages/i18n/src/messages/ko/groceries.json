@@ -114,6 +114,7 @@
     "addButton": "Bring!에 추가",
     "ready": "항목을 Bring!로 보낼 준비가 되었습니다",
     "open": "Bring! 열기",
+    "opening": "Bring! 여는 중…",
     "errors": {
       "notPublic": "Bring!가 이 Norish 인스턴스에 접근할 수 없습니다. HTTPS를 통해 인터넷에서 접근할 수 있어야 합니다.",
       "unreachable": "Bring!가 응답하지 않았습니다. 잠시 후 다시 시도하세요.",

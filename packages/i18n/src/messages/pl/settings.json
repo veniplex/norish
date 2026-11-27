@@ -649,7 +649,7 @@
         "description": "Dokąd trafiają składniki przepisu, gdy ktoś dodaje je do listy.",
         "builtin": "Lista zakupów Norish",
         "bring": "Bring!",
-        "bringNotice": "Gdy ktoś dodaje składniki, serwery Bring! pobierają tymczasową publiczną stronę HTTPS pod /share/bring/, zawierającą nazwę przepisu, jego główne zdjęcie, porcje i pozycje, która jest usuwana po godzinie. Ta instancja Norish musi więc być dostępna z internetu, a /share/bring/ musi być otwarte bez logowania."
+        "bringNotice": "Gdy ktoś dodaje składniki, serwery Bring! pobierają tymczasową publiczną stronę HTTPS z nazwą przepisu, liczbą porcji i wierszami produktów. Ta instancja Norish musi więc być dostępna z internetu."
       },
       "export": {
         "title": "Archiwum przepisów",

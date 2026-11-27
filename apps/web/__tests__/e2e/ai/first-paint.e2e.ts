@@ -279,6 +279,57 @@ test("a hidden Today's meals never reaches the phone's dashboard markup, only th
   expect(await dashboardHasTodaysMeals(browser, "desktop")).toBe(true);
 });
 
+/**
+ * The Floating Bar Style `<html>` carries before any of the app's script runs, and whether the
+ * bar's chrome token resolves to the theme's own surface. Inline scripts run; the app's bundles
+ * are refused, so nothing can come from hydration.
+ */
+async function barBeforeHydration(browser: Browser, kind: DeviceKind) {
+  const context = await browser.newContext({
+    baseURL: stack.baseURL,
+    storageState: { cookies: stack.ownerCookies, origins: [] },
+    userAgent: USER_AGENTS[kind],
+    // In the light theme `match` puts the bar on the card's own surface.
+    colorScheme: "light",
+  });
+
+  try {
+    const page = await context.newPage();
+
+    await page.route("**/_next/static/chunks/**", (route) => route.abort());
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+
+    return await page.evaluate(() => {
+      const root = document.documentElement;
+      const style = getComputedStyle(root);
+
+      return {
+        attribute: root.getAttribute("data-floating-bar"),
+        onSurface:
+          style.getPropertyValue("--chrome").trim() ===
+          style.getPropertyValue("--untinted-surface").trim(),
+      };
+    });
+  } finally {
+    await context.close();
+  }
+}
+
+test("a phone set to match the theme has its bar in the theme's colours before hydration, only the phone", async ({
+  browser,
+}) => {
+  await seed("phone", { floatingBarStyle: "match" });
+
+  expect(await barBeforeHydration(browser, "phone")).toEqual({
+    attribute: "match",
+    onSurface: true,
+  });
+  expect(await barBeforeHydration(browser, "desktop")).toEqual({
+    attribute: null,
+    onSurface: false,
+  });
+});
+
 test("Today's meals is in the dashboard markup by default", async ({ browser }) => {
   for (const kind of ["phone", "desktop"] as const) {
     expect(await dashboardHasTodaysMeals(browser, kind)).toBe(true);

@@ -124,15 +124,13 @@ test("the grocery list's address takes a member home", async () => {
 test("a recipe's ingredients go to Bring! as a public schema.org Recipe, and not onto the list", async () => {
   const panel = await openPanel("Add to Bring!");
 
-  // One press: Bring!'s link opens in a new tab as soon as it is back, with no blank tab before it
-  // and no second tap.
+  // The press itself opens the tab, and the tab goes on to Bring!'s link: no second tap.
   const [opened] = await Promise.all([
     ownerContext.waitForEvent("page"),
     panel.getByRole("button", { name: "Add to Bring!" }).click(),
   ]);
 
   await opened.waitForURL(`${stack.bring.url}/deeplink/1`);
-  expect(await opened.evaluate(() => window.opener)).toBeNull();
   await opened.close();
   await expect(owner.getByRole("button", { name: "Open Bring!" })).toHaveCount(0);
 
@@ -155,20 +153,22 @@ test("a recipe's ingredients go to Bring! as a public schema.org Recipe, and not
   expect(await readGroceryNames(stack)).toEqual([EARLIER_GROCERY]);
 });
 
-test("when Bring! cannot fetch the page, the member is told the status, and no tab opens", async () => {
+test("when Bring! cannot fetch the page, the member is told the status, and the tab closes", async () => {
   const panel = await openPanel("Add to Bring!");
   const parsedBefore = stack.bring.parsed.length;
   const requestsBefore = stack.bring.requests.length;
-  const pagesBefore = ownerContext.pages().length;
 
   // The parser reads a token that does not exist, so the instance answers it 404.
   stack.bring.breakPages();
 
-  await panel.getByRole("button", { name: "Add to Bring!" }).click();
+  const [opened] = await Promise.all([
+    ownerContext.waitForEvent("page"),
+    panel.getByRole("button", { name: "Add to Bring!" }).click(),
+  ]);
 
   await expect(owner.getByText(/Bring! couldn't open the page Norish made for it/)).toBeVisible();
   await expect(owner.getByText("Your server answered HTTP 404.")).toBeVisible();
-  expect(ownerContext.pages()).toHaveLength(pagesBefore);
+  await expect.poll(() => opened.isClosed()).toBe(true);
   await expect(panel).toBeVisible();
   expect(stack.bring.parsed).toHaveLength(parsedBefore + 1);
   // Bring! was never asked for a link.

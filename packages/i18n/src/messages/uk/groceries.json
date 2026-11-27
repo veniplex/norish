@@ -114,6 +114,7 @@
     "addButton": "Додати до Bring!",
     "ready": "Ваші товари готові для Bring!",
     "open": "Відкрити Bring!",
+    "opening": "Відкриваємо Bring!…",
     "errors": {
       "notPublic": "Bring! не може підключитися до цього екземпляра Norish. Він має бути доступний з інтернету через HTTPS.",
       "unreachable": "Bring! не відповів. Спробуйте ще раз за мить.",

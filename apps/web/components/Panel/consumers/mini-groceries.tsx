@@ -1,6 +1,5 @@
 "use client";
 
-import type { SVGProps } from "react";
 import { useState } from "react";
 import { IngredientIcon } from "@/components/ingredients/ingredient-icon";
 import { OnTheListMark } from "@/components/ingredients/on-the-list-mark";
@@ -13,7 +12,7 @@ import {
 } from "@/components/shared/action-button";
 import { useUnitFormatter } from "@/hooks/use-unit-formatter";
 import { ArchiveBoxArrowDownIcon } from "@heroicons/react/16/solid";
-import { Button, Input, Spinner } from "@heroui/react";
+import { Button, Input } from "@heroui/react";
 import { useTranslations } from "next-intl";
 
 import type { ScaledFood } from "@norish/shared-react/groceries";
@@ -34,11 +33,6 @@ import {
   formatEditableIngredient,
   parseEditedIngredientLine,
 } from "@norish/shared/lib/grocery-lines";
-
-/** The add button's icon while the lines are on their way to Bring!. */
-function SendingIcon({ className }: SVGProps<SVGSVGElement>) {
-  return <Spinner className={className} color="current" size="sm" />;
-}
 
 type MiniGroceriesProps = {
   open: boolean;
@@ -343,12 +337,9 @@ function MiniGroceriesContent({
           <ActionButtonGroup>
             <ActionButton
               action="add"
-              // Bring! takes a moment to answer: the button says it is on its way until it opens.
-              icon={isBring && isAdding ? SendingIcon : undefined}
               isDisabled={
                 selectedCount + inPantrySelectedCount === 0 || isAdding || isProviderLoading
               }
-              isPending={isBring && isAdding}
               onPress={handleConfirm}
             >
               {isBring ? tBring("addButton") : tActions("add")}
