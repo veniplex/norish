@@ -104,12 +104,13 @@ export function MobilePlatformProvider({
       });
     },
     storage: mmkvStorage,
+    // The phone hands a link to another app without a popup blocker, so it opens whenever it is asked.
     openExternalUrl: (url) => {
-      if (isOpenableExternalUrl(url)) void Linking.openURL(url);
+      if (!isOpenableExternalUrl(url)) return false;
+      void Linking.openURL(url);
+
+      return true;
     },
-    // The phone hands a link to another app without a popup blocker, so the add opens Bring! itself.
-    opensExternalUrlUnprompted: true,
-    reserveExternalWindow: () => null,
     // Phase one is the web only: the phone keeps the built-in grocery list whatever the setting says.
     supportsExternalShoppingList: false,
     deviceKind,

@@ -114,7 +114,6 @@
     "addButton": "Zu Bring! hinzufügen",
     "ready": "Deine Artikel sind bereit für Bring!",
     "open": "Bring! öffnen",
-    "opening": "Bring! wird geöffnet …",
     "errors": {
       "notPublic": "Bring! kann diese Norish-Instanz nicht erreichen. Sie muss über HTTPS aus dem Internet erreichbar sein.",
       "unreachable": "Bring! hat nicht geantwortet. Versuche es gleich noch einmal.",

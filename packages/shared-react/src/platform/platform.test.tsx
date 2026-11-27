@@ -28,10 +28,9 @@ describe("the platform adapter", () => {
       ),
     });
 
-    result.current.openExternalUrl("https://example.com");
+    expect(result.current.openExternalUrl("https://example.com")).toBe(true);
 
     expect(adapter.openExternalUrl).toHaveBeenCalledWith("https://example.com");
-    expect(result.current.opensExternalUrlUnprompted).toBe(false);
   });
 
   it("is missing without a provider", () => {

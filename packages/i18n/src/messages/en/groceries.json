@@ -114,7 +114,6 @@
     "addButton": "Add to Bring!",
     "ready": "Your items are ready for Bring!",
     "open": "Open Bring!",
-    "opening": "Opening Bring!…",
     "errors": {
       "notPublic": "Bring! can't reach this Norish instance. It must be reachable from the internet over HTTPS.",
       "unreachable": "Bring! didn't respond. Try again in a moment.",

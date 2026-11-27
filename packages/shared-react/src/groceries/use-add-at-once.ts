@@ -3,8 +3,9 @@ import { useEffect, useRef } from "react";
 import type { ScaledFood } from "./use-lines-to-buy";
 import { useLinesToBuy } from "./use-lines-to-buy";
 
-/** Adds what the panel would tick once the recipe and a fresh Pantry read have answered; an
- * unreadable Pantry opens the panel instead, and `onDone` runs once, as it decides. */
+/** Adds what the panel would tick (or sends it to Bring! where that is the list) once the recipe
+ * and a fresh Pantry read have answered; an unreadable Pantry opens the panel instead, and
+ * `onDone` runs once, as it decides. */
 export function useAddAtOnce({
   recipeId,
   servings,

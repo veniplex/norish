@@ -40,7 +40,7 @@ export async function GET(_req: Request, { params }: RouteContext<"/share/bring/
 
   if (!handoff) return notFound();
 
-  return new Response(renderHandoffHtml(handoff, publicBaseUrl()), {
+  return new Response(renderHandoffHtml(handoff, { baseUrl: publicBaseUrl(), token }), {
     headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE_HEADERS },
   });
 }

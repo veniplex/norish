@@ -114,7 +114,6 @@
     "addButton": "Lisää Bring!iin",
     "ready": "Tuotteesi ovat valmiina Bring!iin",
     "open": "Avaa Bring!",
-    "opening": "Avataan Bring!…",
     "errors": {
       "notPublic": "Bring! ei tavoita tätä Norish-palvelinta. Sen on oltava tavoitettavissa internetistä HTTPS-yhteydellä.",
       "unreachable": "Bring! ei vastannut. Yritä hetken kuluttua uudelleen.",
